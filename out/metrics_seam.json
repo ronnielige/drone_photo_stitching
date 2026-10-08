@@ -1,0 +1,26 @@
+{
+ "v3 优化前": {
+  "seam_px": 155494,
+  "n": 155494,
+  "step_median": 30.0,
+  "step_p90": 66.0,
+  "dji_median": 27.0,
+  "excess_median": 3.0,
+  "excess_p90": 41.0,
+  "frac_gt8": 42.044709120609156,
+  "sobel_p95": 229.38177490234375,
+  "sobel_excess": 47.84941101074219
+ },
+ "v4 接缝优化": {
+  "seam_px": 295774,
+  "n": 295774,
+  "step_median": 27.0,
+  "step_p90": 61.0,
+  "dji_median": 27.0,
+  "excess_median": 1.0,
+  "excess_p90": 37.0,
+  "frac_gt8": 37.667272985455114,
+  "sobel_p95": 172.53985595703125,
+  "sobel_excess": -5.9986572265625
+ }
+}

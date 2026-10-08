@@ -1,0 +1,29 @@
+{
+ "size_mine": [
+  16000,
+  12073
+ ],
+ "gsd_mine": 0.055,
+ "size_dji": [
+  14599,
+  10488
+ ],
+ "gsd_dji": 0.0562,
+ "sharpness_A_mine": 970.8460083007812,
+ "sharpness_A_dji": 195.11016845703125,
+ "sharpness_B_mine": 586.3603515625,
+ "sharpness_B_dji": 322.3212585449219,
+ "stats_mine": {
+  "mean": 119.2,
+  "std": 35.9,
+  "p2": 54.0,
+  "p98": 210.0
+ },
+ "stats_dji": {
+  "mean": 99.8,
+  "std": 51.3,
+  "p2": 0.0,
+  "p98": 201.0
+ },
+ "valid_overlap_ratio": 0.8468064722526628
+}
