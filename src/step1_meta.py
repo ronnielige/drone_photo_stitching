@@ -5,7 +5,7 @@ import glob
 import math
 import numpy as np
 from common import (IMG_DIR, DJI_DIR, WORK, log, save_json, EPSG,
-                    Camera, euler_to_R, R_to_euler)
+                    UTM_ZONE, UTM_SOUTH, Camera, euler_to_R, R_to_euler)
 
 NUM = re.compile(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?")
 
@@ -133,7 +133,8 @@ def main():
         from geo import latlon_to_utm
         from scipy.optimize import linear_sum_assignment
         E, N = latlon_to_utm(np.array([m["lat"] for m in meta]),
-                             np.array([m["lon"] for m in meta]), 50)
+                             np.array([m["lon"] for m in meta]),
+                             UTM_ZONE, north=not UTM_SOUTH)
         P = np.stack([E, N], axis=1)
         Q = arr[:, 3:5]
         D = np.linalg.norm(P[:, None, :] - Q[None, :, :], axis=2)

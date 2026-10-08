@@ -5,29 +5,38 @@ import time
 import math
 import numpy as np
 
-# ---- 路径配置：换数据集只需设置环境变量，无需改代码 ----
-#   DP_ROOT     工程根目录（默认当前脚本所在工程的上一级）
-#   DP_IMG_DIR  航拍原始图片目录（必改：换成新采集目录）
-#   DP_DJI_DIR  大疆智图工程目录（仅用于对照评估，可不设）
-#   DP_WORK     中间产物目录
-#   DP_OUT      最终输出目录
+# ---- 路径 / 投影配置：换数据集只需设环境变量，无需改代码 ----
+#   DRONE_DATA_DIR  数据根目录（下面三项若未单独设置，则从这个目录派生）
+#   DRONE_IMG_DIR   航拍原始图片目录（必改：换成新采集目录）
+#   DRONE_DJI_DIR   大疆智图工程目录（仅用于对照评估，可不设）
+#   DRONE_WORK      中间产物目录
+#   DRONE_OUT       最终输出目录
+#   DRONE_UTM_ZONE  UTM 带号，默认 50（东经 114~120°）。换地区务必确认！
+#   DRONE_SOUTH     南半球设 1（默认 0 = 北半球）
+#   DRONE_EPSG      直接指定 EPSG（设了就忽略上面两项）
 # 例（Windows cmd）：
-#   set DP_IMG_DIR=D:\data\new_flight\raw
-#   set DP_OUT=D:\data\new_flight\out
+#   set DRONE_IMG_DIR=D:\data\new_flight\raw
+#   set DRONE_OUT=D:\data\new_flight\out
+#   set DRONE_UTM_ZONE=51
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _PROJ = os.path.dirname(_HERE)                       # .../<工程>/mysolution
 
-ROOT = os.environ.get("DP_ROOT", os.path.dirname(_PROJ))
-IMG_DIR = os.environ.get("DP_IMG_DIR", os.path.join(ROOT, "xiangjia1_186m"))
-DJI_DIR = os.environ.get("DP_DJI_DIR", os.path.join(ROOT, "xiangjia1"))
-WORK = os.environ.get("DP_WORK", os.path.join(_PROJ, "work"))
-OUT = os.environ.get("DP_OUT", os.path.join(_PROJ, "out"))
+_DATA_ROOT = os.environ.get("DRONE_DATA_DIR", os.path.dirname(_PROJ))
+
+ROOT = _DATA_ROOT
+IMG_DIR = os.environ.get("DRONE_IMG_DIR", os.path.join(_DATA_ROOT, "xiangjia1_186m"))
+DJI_DIR = os.environ.get("DRONE_DJI_DIR", os.path.join(_DATA_ROOT, "xiangjia1"))
+WORK = os.environ.get("DRONE_WORK", os.path.join(_PROJ, "work"))
+OUT = os.environ.get("DRONE_OUT", os.path.join(_PROJ, "out"))
 SRC = _HERE
 
 for d in (WORK, OUT):
     os.makedirs(d, exist_ok=True)
 
-EPSG = "EPSG:32650"  # WGS84 / UTM zone 50N
+# UTM：默认 50N（对应 EPSG:32650）。zone*6-183 = 中央经线
+UTM_ZONE = int(os.environ.get("DRONE_UTM_ZONE", "50"))
+UTM_SOUTH = os.environ.get("DRONE_SOUTH", "0").strip() in ("1", "true", "True")
+EPSG = os.environ.get("DRONE_EPSG") or f"EPSG:{32700 + UTM_ZONE if UTM_SOUTH else 32600 + UTM_ZONE}"
 
 _T0 = time.time()
 

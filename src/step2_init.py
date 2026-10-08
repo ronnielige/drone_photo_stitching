@@ -3,7 +3,7 @@ import os
 import math
 import numpy as np
 from common import (WORK, OUT, log, save_json, load_json, Camera,
-                    R_to_euler, euler_to_R)
+                    R_to_euler, euler_to_R, UTM_ZONE, UTM_SOUTH)
 from geo import latlon_to_utm
 
 GROUND_MARGIN = 5.0  # 初始地面高度估计的容差
@@ -14,7 +14,7 @@ def build_init_pose(meta):
     lats = np.array([m["lat"] for m in meta])
     lons = np.array([m["lon"] for m in meta])
     alts = np.array([m["alt"] for m in meta])
-    E, N = latlon_to_utm(lats, lons, 50)
+    E, N = latlon_to_utm(lats, lons, UTM_ZONE, north=not UTM_SOUTH)
     C = np.stack([E, N, alts], axis=1)
 
     Rs = []

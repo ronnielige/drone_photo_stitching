@@ -39,7 +39,7 @@ def main():
 
     transform = Affine(gsd, 0.0, x0, 0.0, -gsd, y0)
     profile = dict(driver="GTiff", height=H, width=W, count=3, dtype="uint8",
-                   crs=CRS.from_epsg(32650), transform=transform,
+                   crs=CRS.from_user_input(EPSG), transform=transform,
                    tiled=True, blockxsize=1024, blockysize=1024,
                    compress="JPEG", photometric="YCBCR", jpeg_quality=92,
                    BIGTIFF="IF_SAFER", interleave="PIXEL")

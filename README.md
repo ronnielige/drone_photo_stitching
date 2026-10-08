@@ -37,93 +37,112 @@ pip install numpy opencv-python scipy Pillow rasterio pyproj
 
 ## 2. 换一个新采集的数据集怎么跑（重点）
 
-**只需设置环境变量，不用改任何代码。** 在 `src/` 目录下执行：
+**只需设置环境变量，不用改任何代码。**
 
-### Windows (cmd)
-
-```bat
-set DP_IMG_DIR=D:\data\new_flight\raw
-set DP_OUT=D:\data\new_flight\out
-set DP_WORK=D:\data\new_flight\work
-python step1_meta.py
-```
-
-### Windows (PowerShell)
-
-```powershell
-$env:DP_IMG_DIR = "D:\data\new_flight\raw"
-$env:DP_OUT     = "D:\data\new_flight\out"
-$env:DP_WORK    = "D:\data\new_flight\work"
-python step1_meta.py
-```
-
-### Linux / macOS
-
-```bash
-export DP_IMG_DIR=/data/new_flight/raw
-export DP_OUT=/data/new_flight/out
-export DP_WORK=/data/new_flight/work
-python step1_meta.py
-```
-
-### 环境变量一览
+### 一次性设置
 
 | 变量 | 含义 | 默认值 |
 |---|---|---|
-| `DP_IMG_DIR` | **航拍原始图片目录（必改）** | `<工程根>/xiangjia1_186m` |
-| `DP_OUT` | 最终输出目录 | `<src>/../out` |
-| `DP_WORK` | 中间产物目录 | `<src>/../work` |
-| `DP_DJI_DIR` | 大疆智图工程目录（仅对照评估用，可不存在） | `<工程根>/xiangjia1` |
-| `DP_ROOT` | 工程根目录 | `<src>/../..` |
+| `DRONE_IMG_DIR` | **航拍原始图片目录（必改）** | `<数据根>/xiangjia1_186m` |
+| `DRONE_OUT` | 最终输出目录 | `<仓库>/out` |
+| `DRONE_WORK` | 中间产物目录 | `<仓库>/work` |
+| `DRONE_DJI_DIR` | 大疆智图工程目录（仅对照评估用，可不存在） | `<数据根>/xiangjia1` |
+| `DRONE_DATA_DIR` | 数据根目录（上面几项未单独设置时从它派生） | `<仓库>/..` |
+| **`DRONE_UTM_ZONE`** | **UTM 带号，默认 50（东经 114~120°）。换地区务必确认！** | `50` |
+| `DRONE_SOUTH` | 南半球设 `1` | `0` |
+| `DRONE_EPSG` | 直接指定 EPSG（设了就忽略上面两项） | `EPSG:326<zone>` |
+
+### 三条命令跑完
+
+**Windows (cmd)**
+
+```bat
+set DRONE_IMG_DIR=D:\data\new_flight\raw
+set DRONE_OUT=D:\data\new_flight\out
+set DRONE_WORK=D:\data\new_flight\work
+python run_pipeline.py
+```
+
+**Windows (PowerShell)**
+
+```powershell
+$env:DRONE_IMG_DIR = "D:\data\new_flight\raw"
+$env:DRONE_OUT     = "D:\data\new_flight\out"
+$env:DRONE_WORK    = "D:\data\new_flight\work"
+python run_pipeline.py
+```
+
+**Linux / macOS**
+
+```bash
+export DRONE_IMG_DIR=/data/new_flight/raw
+export DRONE_OUT=/data/new_flight/out
+export DRONE_WORK=/data/new_flight/work
+python run_pipeline.py
+```
+
+`run_pipeline.py` 会先打印将要使用的路径 / 影像数 / 投影带号，缺目录或没图片时给出可操作的提示并退出。
+
+```bash
+python run_pipeline.py --list              # 只列步骤
+python run_pipeline.py --from 6            # 从第 6 步开始（复用已有中间产物）
+python run_pipeline.py --only 12 13 14     # 只跑某几步
+python run_pipeline.py --dry-run           # 只打印命令
+```
+
+### ⚠️ 换地区必确认的两件事
+
+1. **UTM 带号**。默认 50 只适合东经 114°~120°。
+   带号 = `floor(经度/6) + 31`（北半球 EPSG = `32600+带号`）。算错了整幅图坐标全偏。
+   启动时会打印 `投影: EPSG:326xx`，**先核对一眼**。
+2. **XMP 是否保留**。部分相机/后期流程会剥掉 XMP，没有 GPS/云台角就跑不了 SfM。
+   第 1 步会打印经纬范围，为空说明 XMP 丢了。
 
 ### 对数据的要求
 
 - **图片**：同一架次、带 DJI XMP 元数据（含 GPS / 云台姿态 / 内参）的 JPG。
   扩展名 `.JPG/.JPEG/.TIF/.TIFF/.PNG` 均可识别（大小写不敏感）。
-- **目录**：`DP_IMG_DIR` 下直接放图片，无需子目录。
+- **目录**：`DRONE_IMG_DIR` 下直接放图片，无需子目录。
 - **可选**：同目录下的 `*.MRK` 时间戳文件（用于时间排序，没有也能跑）。
 - **重叠度**：航向 ≥ 70%、旁向 ≥ 60%（DJI M3E 默认设置即可）。
 - **相机**：默认内参按 DJI M3E 广角相机标定（`step1_meta.py` 会优先读 XMP 的
   `DewarpData`，读不到才回退到内置值）。**换别的机型必须确认这一步读对了。**
 
-跑之前建议先用 `step1_meta.py` 单独验证：
-
-```bash
-python step1_meta.py
-```
-
-输出会打印：发现多少张影像、每张的 GPS / 云台角 / 内参、以及测区范围。
-**数量对不上或范围明显不合理，先别往下跑。**
+**评估脚本不要照搬**：`step8c_evaluate.py` / `step8d_seam_eval.py` / `hotspot_view.py` 等
+需要大疆同区域成果做对照，**主链（1~15 步）不依赖任何大疆产物**。
 
 ---
 
-## 3. 完整运行步骤（按顺序）
+## 3. 完整运行步骤（`run_pipeline.py` 内部顺序）
 
-设当前目录为 `src/`，Python 为上述 venv。
+设当前目录为仓库根，Python 用装了依赖的解释器。
 
-| # | 命令 | 产物 | 本机耗时（129 张） |
+| # | 脚本 | 产物 | 本机耗时（129 张） |
 |---|---|---|---|
-| 1 | `python step1_meta.py` | `work/meta.json` `work/camera.json` | 10 s |
-| 2 | `python step2_init.py` | `work/init_R.npy` `init_C.npy` `pairs.json` `ground0.json` | 5 s |
-| 3 | `python step3_features.py` | `work/feats.npz` `matches.npz` | 23 s + 2.5 min |
-| 4 | `python step4_ba.py` | `work/ba_R.npy` `ba_C.npy` `ba_X.npy` | 1 min |
-| 5 | `python step5_dsm.py` | `work/dsm.npy` `dsm_meta.json` | 2 min |
-| 6 | `python step5f_gains.py` | `work/gains.npy` | 10 s |
-| 7 | `python step4b_radiometry.py` | `work/radio.npy` | 3 min |
-| 8 | `python step5c_dsm_refine.py` | `work/dsm_v2.npy` `dsm_meta_v2.json` | **~15 min** |
-| 9 | `python step5d_despike.py` | 就地更新 `dsm_v2.npy` | 20 s |
-| 10 | `python step5e_smooth.py` | 就地更新 `dsm_v2.npy` | 30 s |
-| 11 | `python step6b_ortho.py` | `out/ortho_rgb.npy` `ortho_avg.npy` `ortho_valid.npy` `ortho_vidx.npy` `ortho_meta.json` | **~19 min** |
-| 12 | `python step6d_seamcut.py` | `out/ortho_rgb_cut.npy` `ortho_vidx_cut.npy` | **~27 min** |
-| 13 | `python step6e_seam_feather.py` | `out/ortho_rgb_cut_f.npy` | 8 s |
-| 14 | `MIX_SF=out/ortho_rgb_cut_f.npy MIX_DST=out/ortho_rgb3_cut.npy python step6c_mix.py` | `out/ortho_rgb3_cut.npy` | 1 min |
-| 15 | `python export_tif.py out/ortho_rgb3_cut.npy xiangjia_ortho.tif` | `xiangjia_ortho.tif` + `.tfw`/`.prj`/预览图 | 2 min |
+| 1 | `step1_meta.py` | `work/meta.json` `work/camera.json` | 10 s |
+| 2 | `step2_init.py` | `work/init_R.npy` `init_C.npy` `pairs.json` `ground0.json` | 10 s |
+| 3 | `step3_features.py` | `work/feats.npz` `work/matches.npz` | 23 s + 2.5 min |
+| 4 | `step4_ba.py` | `work/ba_R.npy` `ba_C.npy` `ba_X.npy` | 1 min |
+| 5 | `step5_dsm.py` | `work/dsm.npy` `dsm_meta.json` | 2 min |
+| 6 | `step5f_gains.py` | `work/gains.npy` | 20 s |
+| 7 | `step4b_radiometry.py` | `work/radio.npy` | 3 min |
+| 8 | `step5c_dsm_refine.py` | `work/dsm_v2.npy` `dsm_meta_v2.json` | **~15 min** |
+| 9 | `step5d_despike.py` | 就地更新 `dsm_v2.npy` | 20 s |
+| 10 | `step5e_smooth.py` | 就地更新 `dsm_v2.npy` | 30 s |
+| 11 | `step6b_ortho.py` | `out/ortho_rgb.npy` `ortho_avg.npy` `ortho_valid.npy` `ortho_vidx.npy` `ortho_meta.json` | **~19 min** |
+| 12 | `step6d_seamcut.py` | `out/ortho_rgb_cut.npy` `ortho_vidx_cut.npy` | **~27 min** |
+| 13 | `step6e_seam_feather.py` | `out/ortho_rgb_cut_f.npy` | 10 s |
+| 14 | `step6c_mix.py`（带 `MIX_SF`/`MIX_DST`） | `out/ortho_rgb3_cut.npy` | 1 min |
+| 15 | `export_tif.py` | `xiangjia_ortho.tif` + `.tfw`/`.prj`/预览图 | 2 min |
 
-> PowerShell 里环境变量写法：`$env:MIX_SF="out/ortho_rgb_cut_f.npy"; $env:MIX_DST="out/ortho_rgb3_cut.npy"; python step6c_mix.py`
+> 第 12~13 步是消除拼接"分割线"的关键，**不要跳过**（详见第 5 节）。
 >
-> `export_tif.py` **需要 rasterio**，用 venv 跑。
-
-第 12~13 步是消除拼接"分割线"的关键，**不要跳过**（详见第 5 节）。
+> 也可以手工分步跑（调试用）。只需要注意第 14 步的环境变量：
+> ```bash
+> MIX_SF=out/ortho_rgb_cut_f.npy MIX_DST=out/ortho_rgb3_cut.npy python step6c_mix.py
+> python export_tif.py out/ortho_rgb3_cut.npy xiangjia_ortho.tif
+> ```
+> `export_tif.py` **需要 rasterio**，用装了 rasterio 的 venv 跑。
 
 ### 只看结果不想等？
 
@@ -237,13 +256,15 @@ python step6d_seamcut.py win 562121.6 3324780.8 120    # E0 N1 size(米)
 ```
 drone_photo_stitching/
 ├── README.md                 # 本文件
+├── run_pipeline.py           # ★一键跑主链（--list / --from / --only / --dry-run）
 ├── 拼接方案报告.md            # 完整技术报告（含大疆结果分析、指标、踩坑）
+├── requirements.txt
 ├── src/                      # 全部管线代码
-│   ├── common.py             # 路径配置(环境变量) / 坐标 / 相机模型 / 中文路径IO
+│   ├── common.py             # 路径/投影配置(环境变量) / 坐标 / 相机模型 / 中文路径IO
 │   ├── geo.py                # 经纬度 → UTM
-│   ├── step1_meta.py ~ step6e_seam_feather.py, export_tif.py
+│   ├── step1_meta.py ~ step6e_seam_feather.py, export_tif.py   # 主链
 │   └── step8c_evaluate.py step8d_seam_eval.py seam_scan.py
-│       hotspot_view.py cut_eval.py seam_lab.py make_figs_v4.py   # 评估/出图
+│       hotspot_view.py cut_eval.py seam_lab.py make_figs_v4.py # 评估/出图
 └── out/                      # 关键结果图与指标
     ├── fig_seam_hotspots_v4.jpg   # 【推荐先看】v3 vs v4 vs 大疆 逐热点对照
     ├── fig_hotspots_cut.jpg       # 4 栏：原图 / 优化后 / 缝线位置 / 大疆
@@ -253,6 +274,9 @@ drone_photo_stitching/
     ├── metrics.json               # 锐度 / 尺寸 / 统计
     └── metrics_seam.json          # 接缝指标 v3 vs v4
 ```
+
+> 运行时会自动创建 `work/`（中间产物）与使用 `out/`。两者已在 `.gitignore` 里，
+> 不会把几百 MB 的 npy 提交上去。
 
 ---
 
