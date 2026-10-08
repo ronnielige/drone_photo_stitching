@@ -1,0 +1,12 @@
+# 无人机航拍拼接管线依赖
+# 实测环境：Python 3.12.10 / Windows
+# 版本号为本地实测值，使用 >= 亦可
+
+numpy>=1.26
+scipy>=1.11
+opencv-python>=4.8
+Pillow>=10.0
+tifffile>=2023.7.10
+rasterio>=1.3
+pyproj>=3.6
+shapely>=2.0

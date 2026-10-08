@@ -1,0 +1,39 @@
+# ---------------- Python ----------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.ipynb_checkpoints/
+
+# ---------------- 运行时缓存 / 大型中间产物 ----------------
+# 以下均可由管线重新生成，体积数十至数百 MB，不入库
+cache/
+*.log
+*.npz
+*.pkl
+*.npy
+
+# work/ 下的小体量关键元数据（位姿、增益、辐射系数等）需入库，故对 *.npy 开一个例外
+!work/*.npy
+
+# ---------------- IDE / 系统 ----------------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---------------- 数据 ----------------
+# 原始航拍影像与大疆智图工程不在本仓库
+xiangjia1_186m/
+xiangjia1/
+
+# 说明：out/xiangjia_ortho_mine.tif (94.5MB) 为最终成品，默认保留入库。
+#       若仓库不便承载大文件，取消下面一行注释改为忽略，改用 Git LFS / Release 分发。
+# out/*.tif
